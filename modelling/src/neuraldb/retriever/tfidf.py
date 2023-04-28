@@ -57,8 +57,11 @@ if __name__ == "__main__":
 
     setup_logging()
     tfidf = TFIDFRetriever()
+
     with open(args.in_file) as f, open(args.out_file, "w+") as of:
+        count = 1 #added by kent 
         for line in f:
+            print("Database", count) #Added by kent
             database = json.loads(line)
 
             facts = database["facts"]
@@ -70,3 +73,4 @@ if __name__ == "__main__":
                 ]
 
             of.write(json.dumps(database) + "\n")
+            count +=1
