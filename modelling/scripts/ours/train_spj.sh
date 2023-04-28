@@ -28,7 +28,10 @@ seed=${SEED:-1}
 work_dir=work/${dataset}/model=t5,generator=${generator},lr=${lr},steps=${steps}/seed-${seed}
 data_dir=resources/${dataset}
 
-python src/neuraldb/run.py \
+##Original Line
+#python src/neuraldb/run.py \
+##Replaced by kent: 
+python3 src/neuraldb/run.py \
   --model_name_or_path t5-base \
   --learning_rate ${lr} \
   --gradient_accumulation_steps ${steps} \
