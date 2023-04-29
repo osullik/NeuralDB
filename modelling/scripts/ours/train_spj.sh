@@ -17,7 +17,9 @@
 ## limitations under the License.
 ##
 export PYTHONPATH=src
-export TRANSFORMERS_CACHE=/local/scratch/jt719/.cache
+#export TRANSFORMERS_CACHE=/local/scratch/jt719/.cache
+export TRANSFORMERS_CACHE=/fs/nexus-projects/neuraldb/NeuralDB/modelling/cache/.cache
+
 
 dataset=$1
 generator=$2
