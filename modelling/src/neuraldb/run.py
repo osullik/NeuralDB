@@ -366,7 +366,6 @@ def main():
         max_length=data_args.max_target_length,
         **config_kwargs,
     )
-
     tokenizer = AutoTokenizer.from_pretrained(
         model_args.tokenizer_name
         if model_args.tokenizer_name
