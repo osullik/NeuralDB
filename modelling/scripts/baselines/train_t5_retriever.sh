@@ -17,7 +17,9 @@
 ## limitations under the License.
 ##
 export PYTHONPATH=src
-export TRANSFORMERS_CACHE=/local/scratch/jt719/.cache
+#Modified by kent for nexus compatibility
+#export TRANSFORMERS_CACHE=/local/scratch/jt719/.cache
+export TRANSFORMERS_CACHE=./cache/.cache
 
 data=$1
 generator=$2
@@ -29,7 +31,8 @@ seed=${SEED:-1}
 work_dir=work/${data}/model=t5,generator=${generator},retriever=${retriever},lr=${lr},steps=${steps}/seed-${seed}
 data_dir=resources/${data}_${retriever}
 
-python src/neuraldb/run.py \
+#Batch size originally 8
+python3 src/neuraldb/run.py \
   --model_name_or_path t5-base \
   --learning_rate ${lr} \
   --gradient_accumulation_steps ${steps} \
@@ -41,8 +44,8 @@ python src/neuraldb/run.py \
   --do_eval \
   --num_train_epochs 3 \
   --evaluation_strategy epoch \
-  --per_device_train_batch_size 8 \
-  --per_device_eval_batch_size 8 \
+  --per_device_train_batch_size 1 \
+  --per_device_eval_batch_size 1 \
   --predict_with_generate \
   --save_total_limit 2 \
   --seed ${seed} \

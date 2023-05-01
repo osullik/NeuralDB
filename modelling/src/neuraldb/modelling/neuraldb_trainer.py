@@ -73,7 +73,6 @@ from transformers.trainer_utils import (
 )
 import logging
 
-
 class EvalPredictionWithMetadata(NamedTuple):
     """
     Evaluation output (always contains labels), to be used to compute metrics.
