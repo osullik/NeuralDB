@@ -22,13 +22,16 @@ from argparse import ArgumentParser
 from collections import defaultdict, Counter
 from functools import reduce
 from operator import itemgetter
+import os
 
 from transformers import AutoTokenizer
 
-from neuraldb.dataset.instance_generator.instance_generator import InstanceGenerator
-from neuraldb.util.log_helper import setup_logging
-from neuraldb.evaluation.scoring_functions import f1
+from dataset.instance_generator.instance_generator import InstanceGenerator
+from util.log_helper import setup_logging
+from evaluation.scoring_functions import f1
 import numpy as np
+from tqdm import tqdm
+from collections import Counter
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +118,8 @@ def maybe_split(keys):
     elif len(split) == 3:
         return [s.strip() for s in split]
     else:
-        print(keys)
+        # print(keys)
+        return keys.strip(), keys.strip(), None # # Fix the issue of Actuals of type Argmin / Argmax
 
 
 def generate_answers(question_type, question_facts):
@@ -124,6 +128,7 @@ def generate_answers(question_type, question_facts):
         # get all keys and find the key with the smallest count
         answers = defaultdict(list)
         numeric_answers = False
+    
         for question in question_facts:
             if question["symmetric"]:
                 ak = None
@@ -154,9 +159,12 @@ def generate_answers(question_type, question_facts):
                 best_answers = {k: v for k, v in best if len(v) == lowest}
             else:
                 if len(set(type(a[1][0][0]) for a in answers.items())) > 1:
-                    print(question)
-                    print([a[1][0][0] for a in answers.items()])
-                best = sorted(answers.items(), key=lambda a: a[1][0][0], reverse=False)
+                    # print(question)
+                    # print([a[1][0][0] for a in answers.items()])
+                    best = sorted(answers.items(), key=lambda a: str(a[1][0][0]), reverse=False) # Convert Int/Float to String
+                else :
+                    best = sorted(answers.items(), key=lambda a: a[1][0][0], reverse=False)
+
                 lowest = best[0][1][0]
                 best_answers = {k: v for k, v in best if v[0] == lowest}
             return list(
@@ -171,7 +179,7 @@ def generate_answers(question_type, question_facts):
     elif question_type == "argmax":
         # get all keys and find the key with the smallest count
         answers = defaultdict(list)
-
+  
         numeric_answers = False
         for question in question_facts:
             if question["symmetric"]:
@@ -203,9 +211,12 @@ def generate_answers(question_type, question_facts):
                 best_answers = {k: v for k, v in best if len(v) == highest}
             else:
                 if len(set(type(a[1][0][0]) for a in answers.items())) > 1:
-                    logger.warning(question)
-                    logger.warning([a[1][0][0] for a in answers.items()])
-                best = sorted(answers.items(), key=lambda a: a[1][0][0], reverse=True)
+                    # logger.warning(question)
+                    # logger.warning([a[1][0][0] for a in answers.items()])
+                    best = sorted(answers.items(), key=lambda a: str(a[1][0][0]), reverse=True) # Convert Int/Float to String
+                else:
+                    best = sorted(answers.items(), key=lambda a: a[1][0][0], reverse=True)
+
                 highest = best[0][1][0]
                 best_answers = {k: v for k, v in best if v[0] == highest}
             return list(
@@ -255,30 +266,52 @@ def generate_answers(question_type, question_facts):
 
         for question in question_facts:
             v = question["generated"]["derivation"]
-            assert "[SEP]" not in v, v
+            # assert "[SEP]" not in v, v
+            if "[SEP]" in v :
+                continue
             answers.add(convert_comparable(v))
 
         best = len(answers)
         return [best]
 
+    # elif question_type == "bool":
+    #     # get all keys and find the key with the smallest count
+    #     answers = set()
+    #     for question in question_facts:
+    #         v = question["generated"]["derivation"]
+    #         assert "[SEP]" not in v, v
+    #         assert v == "TRUE" or v == "FALSE"
+    #         answers.add(convert_comparable(v))
+
+    #     return list(answers) if len(answers) else [None]
+
     elif question_type == "bool":
         # get all keys and find the key with the smallest count
-        answers = set()
-
+        answers = list()
         for question in question_facts:
             v = question["generated"]["derivation"]
             assert "[SEP]" not in v, v
-            assert v == "TRUE" or v == "FALSE"
-            answers.add(convert_comparable(v))
 
-        return list(answers) if len(answers) else [None]
+            if v != "TRUE" and v != "FALSE":    # Avoid to raise error and no answer a question 
+                continue
+
+            answers.append(convert_comparable(v))
+    
+        if len(answers):
+            occurence_count = Counter(answers)
+            return [occurence_count.most_common(1)[0][0]]
+        else :
+            return [None]
+
 
     elif question_type == "set":
         answers = set()
 
         for question in question_facts:
             v = question["generated"]["derivation"]
-            assert "[SEP]" not in v, v
+            # assert "[SEP]" not in v, v
+            if "[SEP]" in v :
+                continue
             answers.add(convert_comparable(v))
 
         return list(answers)
@@ -332,7 +365,7 @@ def post_process_instances(instances, use_predicted_type=True):
         else []
     )
     derivations = list(derivations)
-
+    
     try:
         pred_answer = generate_answers(
             new_instance["predicted_type"]
@@ -348,8 +381,8 @@ def post_process_instances(instances, use_predicted_type=True):
                 for q in derivations
             ],
         )
-
-    except Exception:
+                
+    except Exception as i:
         return None
 
     new_instance["prediction"] = pred_answer
@@ -379,28 +412,43 @@ def post_process_instances(instances, use_predicted_type=True):
     derivations = list(derivations)
 
     try:
-        actual_answer = generate_answers(
-            new_instance["metadata"]["type"],
-            [
-                {
-                    "generated": {"derivation": q},
-                    "symmetric": True
-                    if new_instance["metadata"]["relation"] in {"P47"}
-                    else False,
-                }
-                for q in derivations
-            ],
-        )
+        # if derivations[0]=='[NULL_ANSWER]' and new_instance["metadata"]["type"] != "count":
+        #     actual_answer = ["null"]
+        if new_instance["metadata"]["type"] == "count":
+            actual_answer = [int(derivations[0])] # Fix the issue of Actuals of type COUNT
+        else :
+            actual_answer = generate_answers(
+                new_instance["metadata"]["type"],
+                [
+                    # {
+                    #     "generated": {"derivation": q},
+                    #     "symmetric": True
+                    #     if new_instance["metadata"]["relation"] in {"P47"}
+                    #     else False,
+                    # }
+
+                    # Probleme token : [SYM]
+                    {
+                        "generated": {"derivation": q},
+                        "symmetric": False
+                    }
+                    for q in derivations
+                ],
+            )
 
         new_instance["actual"] = actual_answer
         return new_instance
-    except Exception:
-        print("actual error")
-        print(
-            instance["metadata"]["database_idx"], instance["metadata"]["question_idx"]
-        )
-        print(derivations)
+    except Exception as e:
+        # print("actual error")
+
+        if derivations[0] != '[NULL_ANSWER]' :
+            print("actual error | type =", new_instance["metadata"]["type"], 
+                    "| db_idx :",new_instance["metadata"]["database_idx"],
+                    "| question_idx :", new_instance["metadata"]["question_idx"])
+
+        # print(derivations) 
         # raise e
+
         return None
 
 
@@ -409,6 +457,26 @@ def retokenize(dervs):
         tokenizer.decode(tokenizer.encode(derv), skip_special_tokens=True).strip()
         for derv in dervs
     ]
+
+def copy_answer_into_derivations(filepath):
+    
+    new_file_path = filepath.replace(".jsonl", "_converted.jsonl")
+
+    with open(new_file_path, "w") as converted_file:
+
+        with open(filepath, "r") as input_file:
+            data = []
+            for element in input_file:
+                element = json.loads(element)
+                
+                for query in element["queries"]:
+                    answer = query["answer"]
+                    query["derivations"] = answer
+                converted_file.write(json.dumps(element))
+                converted_file.write('\n')
+                
+    os.remove(filepath)
+    os.rename(new_file_path, filepath)
 
 
 if __name__ == "__main__":
@@ -425,7 +493,6 @@ if __name__ == "__main__":
 
     file = args.in_file
     out_file = args.out_file
-
     with open(file) as f:
         for line in f:
             instance = json.loads(line)
@@ -437,6 +504,8 @@ if __name__ == "__main__":
     extra_dervs = {}
 
     if args.actual_file:
+
+        copy_answer_into_derivations(args.actual_file)
         tokenizer = AutoTokenizer.from_pretrained("t5-base")
         with open(args.actual_file) as f:
             for db_idx, line in enumerate(f):
@@ -444,7 +513,7 @@ if __name__ == "__main__":
                 for q_idx, query in enumerate(database["queries"]):
                     dervs = query["derivations"]
                     extra_dervs[(db_idx, q_idx)] = retokenize(dervs)
-
+                    
     num_instances = len(questions_answers)
     num_correct_type = 0
     running_f1 = 0
@@ -453,7 +522,7 @@ if __name__ == "__main__":
     sq_err = 0
     sq_err_cnt = 0
     with open(out_file, "w+") as of:
-        for instances in questions_answers.values():
+        for instances in tqdm(questions_answers.values()):
 
             new_instance = post_process_instances(instances, use_predicted_type)
             if new_instance is not None:
@@ -461,7 +530,8 @@ if __name__ == "__main__":
                 if new_instance["predicted_type"] == new_instance["metadata"]["type"]:
                     num_correct_type += 1
 
-                if new_instance["metadata"]["type"] == "count":
+                # if new_instance["metadata"]["type"] == "count":
+                if new_instance["metadata"]["type"] == "count" and isinstance(new_instance["prediction"][0], int):
 
                     sq_err += (
                         new_instance["actual"][0] - new_instance["prediction"][0]
@@ -479,6 +549,8 @@ if __name__ == "__main__":
 
                 of.write(json.dumps(new_instance) + "\n")
 
-    print(f"Correct prediction type: \t\t{num_correct_type/num_instances}")
-    print(f"Global F1 type: \t\t{running_f1/scored}")
-    print(sq_err / sq_err_cnt)
+    print(f"\nCorrect prediction type: \t\t{num_correct_type/num_instances}")
+    if scored != 0 : 
+        print(f"Global F1 type: \t\t{running_f1/scored}")
+    if sq_err_cnt != 0 :
+        print(sq_err / sq_err_cnt)
