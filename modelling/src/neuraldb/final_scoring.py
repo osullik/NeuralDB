@@ -31,7 +31,6 @@ def load_experiment(path):
     running_score = defaultdict(lambda: defaultdict(int))
     running_count = defaultdict(lambda: defaultdict(int))
 
-    print(path)
     with open(path) as f:
         for line in f:
             instance = json.loads(line)
@@ -73,8 +72,8 @@ def load_experiment(path):
 
 if __name__ == "__main__":
     ndb_predictions = glob.glob(
-        "consolidated/work/v2.4_25/**/predictions.jsonl", recursive=True
-    )
+        "work/v2.4_25/**/predictions.jsonl", recursive=True
+    ) # nsch removed consolodated/ from start of path
     all_experiments = []
     for prediction in ndb_predictions:
         print(prediction)

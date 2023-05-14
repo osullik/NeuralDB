@@ -114,8 +114,8 @@ if __name__ == "__main__":
                 )
 
     ndb_predictions = glob.glob(
-        "consolidated/work/v2.4_25/**/predictions.jsonl", recursive=True
-    )
+        "work/v2.4_25/**/predictions.jsonl", recursive=True
+    )  # nsch removed consolodated/
     all_experiments = []
     for prediction in ndb_predictions:
 

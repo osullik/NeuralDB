@@ -44,12 +44,12 @@ export seed=${SEED:-1}
 ##SEED=${seed} tsp bash scripts/baselines/train_t5.sh $dataset wholedb 1e-4
 
 ##Changed (COMMENTED OUT SO THEY DON'T RUN AGAIN):
-echo "Training t5 prefect ir"
-SEED=${seed}  bash scripts/baselines/train_t5.sh $dataset perfectir 1e-4
-echo "Training t5 wholedb"
-SEED=${seed}  bash scripts/baselines/train_t5.sh $dataset wholedb 1e-4
+#echo "Training t5 prefect ir"
+#SEED=${seed}  bash scripts/baselines/train_t5.sh $dataset perfectir 1e-4
+#echo "Training t5 wholedb"
+#SEED=${seed}  bash scripts/baselines/train_t5.sh $dataset wholedb 1e-4
 
-echo "Predicting t5 prefect ir"
+#echo "Predicting t5 prefect ir"
 do_predictions work/${dataset}/model=t5,generator=perfectir,lr=1e-4,steps=1/seed-${seed} perfectir ${dataset}
 echo "Predicting t5 wholedb"
 do_predictions work/${dataset}/model=t5,generator=wholedb,lr=1e-4,steps=1/seed-${seed} wholedb ${dataset}
@@ -61,10 +61,10 @@ do_predictions work/${dataset}/model=t5,generator=wholedb,lr=1e-4,steps=1/seed-$
 ##SEED=${seed} tsp bash scripts/baselines/train_longformer.sh $dataset wholedb 1e-4
 
 ##Changed:
-echo "Training Longformer with perfectir"
-SEED=${seed} bash scripts/baselines/train_longformer.sh $dataset perfectir 1e-4
-echo "Training Longformer with wholeDB"
-SEED=${seed} bash scripts/baselines/train_longformer.sh $dataset wholedb 1e-4
+#echo "Training Longformer with perfectir"
+#SEED=${seed} bash scripts/baselines/train_longformer.sh $dataset perfectir 1e-4
+#echo "Training Longformer with wholeDB"
+#SEED=${seed} bash scripts/baselines/train_longformer.sh $dataset wholedb 1e-4
 
 echo "Predicting Longformer with perfectir"
 do_predictions work/${dataset}/model=longformer,generator=perfectir,lr=1e-4,steps=1/seed-${seed} perfectir ${dataset}
@@ -78,10 +78,10 @@ do_predictions work/${dataset}/model=longformer,generator=wholedb,lr=1e-4,steps=
 ##SEED=${seed} tsp bash scripts/baselines/train_t5_retriever.sh $dataset externalir tfidf 1e-4
 
 ##Changed:
-echo "Training t5_rx with dpr"
-SEED=${seed} bash scripts/baselines/train_t5_retriever.sh $dataset externalir dpr 1e-4
-echo "Training t5_rx with tfidf"
-SEED=${seed} bash scripts/baselines/train_t5_retriever.sh $dataset externalir tfidf 1e-4
+#echo "Training t5_rx with dpr"
+#SEED=${seed} bash scripts/baselines/train_t5_retriever.sh $dataset externalir dpr 1e-4
+#echo "Training t5_rx with tfidf"
+#SEED=${seed} bash scripts/baselines/train_t5_retriever.sh $dataset externalir tfidf 1e-4
 
 echo "predcting t5_rx with dpr"
 do_predictions work/${dataset}/model=t5,generator=externalir,retriever=dpr,lr=1e-4,steps=1/seed-${seed} externalir ${dataset}_dpr
